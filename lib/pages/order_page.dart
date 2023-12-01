@@ -10,17 +10,36 @@ import '../components/order.dart';
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
 
+  Future<void> _getOrders(BuildContext context) =>
+      Provider.of<OrderList>(context, listen: false).loadOrders();
+
   @override
   Widget build(BuildContext context) {
-    final orders = Provider.of<OrderList>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus pedidos'),
       ),
-      body: ListView.builder(
-        itemCount: orders.itemsCount,
-        itemBuilder: (context, index) =>
-            OrderWidget(order: orders.items[index]),
+      body: FutureBuilder(
+        future: _getOrders(context),
+        initialData: null,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else {
+            return Consumer<OrderList>(
+              builder: (context, orders, child) {
+                return RefreshIndicator(
+                  onRefresh: () => _getOrders(context),
+                  child: ListView.builder(
+                    itemCount: orders.itemsCount,
+                    itemBuilder: (context, index) =>
+                        OrderWidget(order: orders.items[index]),
+                  ),
+                );
+              },
+            );
+          }
+        },
       ),
       drawer: const AppDrawer(),
     );
